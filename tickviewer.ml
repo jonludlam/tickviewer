@@ -7,6 +7,16 @@ module StudentMap = Map.Make(String)
 
 let output_filename = "tick_submissions.txt"
 
+let postamble = {|
+For reference, the deadlines for the ticks are 1pm on the following dates:
+
+        tick1 : 2019-10-17 (advisory; you may continue to submit after this)
+        tick2 : 2019-10-24
+        tick3 : 2019-10-31
+        tick4 : 2019-11-07
+        tick5 : 2020-01-16
+|}
+
 let get_all_ticks dir =
     Lwt_unix.opendir dir >>= fun d ->
     Lwt_unix.readdir_n d 10000 >>= fun arr ->
@@ -45,12 +55,16 @@ let print_subs subs =
             let subs = List.sort CalendarLib.Calendar.Precise.compare subs in
             Printf.printf "   %s: (%d) [%s]\n%!"
                 tickname (List.length subs) (String.concat "," (
-                    List.map CalendarLib.Printer.Precise_Calendar.to_string subs))) ticks) subs
+                    List.map (fun t -> CalendarLib.Printer.Precise_Calendar.to_string t) subs))) ticks) subs
 
-let output_subs subs =
+let output_subs subs test =
     Lwt_list.iter_s (fun (crsid,ticks) ->
         let output_dir = Printf.sprintf "/home/caelum/%s" crsid in
-        let output_file = Filename.concat output_dir output_filename in
+        let output_file =
+            if test
+            then Printf.sprintf "/tmp/%s.txt" crsid
+            else Filename.concat output_dir output_filename
+        in
         Lwt_io.with_file ~mode:Output output_file (fun ch ->
             Lwt_io.fprintf ch "Tick submissions\n" >>= fun () ->
             Lwt_io.fprintf ch "================\n\n" >>= fun () ->
@@ -69,14 +83,15 @@ let output_subs subs =
                 in
                 line'::strs) ticks []
             in
-            Lwt_list.iter_s (fun line -> Lwt_io.fprintf ch "%s\n" line) lines
+            Lwt_list.iter_s (fun line -> Lwt_io.fprintf ch "%s\n" line) lines >>= fun () ->
+            Lwt_io.fprintf ch "\n%s\n" postamble
         ) >>= fun () ->
         Lwt_unix.chown output_file 1000 1000
     ) (StudentMap.bindings subs)
 
 let run =
     get_submissions Sys.argv.(1) >>= fun subs ->
-    output_subs subs
+    output_subs subs (Array.length Sys.argv > 2)
 
 let _ =
     Lwt_main.run run
