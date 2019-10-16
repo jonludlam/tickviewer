@@ -1,0 +1,4 @@
+(executable
+ (name tickviewer)
+ (libraries lwt.unix astring calendar))
+
