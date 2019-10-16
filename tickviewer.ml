@@ -50,8 +50,7 @@ let print_subs subs =
 let output_subs subs =
     Lwt_list.iter_s (fun (crsid,ticks) ->
         let output_dir = Printf.sprintf "/home/caelum/%s" crsid in
-        let _output_file = Filename.concat output_dir output_filename in
-        let output_file = Printf.sprintf "/tmp/%s.txt" crsid in
+        let output_file = Filename.concat output_dir output_filename in
         Lwt_io.with_file ~mode:Output output_file (fun ch ->
             Lwt_io.fprintf ch "Tick submissions\n" >>= fun () ->
             Lwt_io.fprintf ch "================\n\n" >>= fun () ->
@@ -71,7 +70,8 @@ let output_subs subs =
                 line'::strs) ticks []
             in
             Lwt_list.iter_s (fun line -> Lwt_io.fprintf ch "%s\n" line) lines
-        )
+        ) >>= fun () ->
+        Lwt_unix.chown output_file 1000 1000
     ) (StudentMap.bindings subs)
 
 let run =
