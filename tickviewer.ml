@@ -55,16 +55,18 @@ let output_subs subs =
         Lwt_io.with_file ~mode:Output output_file (fun ch ->
             Lwt_io.fprintf ch "Tick submissions\n" >>= fun () ->
             Lwt_io.fprintf ch "================\n\n" >>= fun () ->
-            Lwt_io.fprintf ch "The following tick submissions have been received. Note that these have not yet been assessed by the autograder.\n\n" >>= fun () ->
+            Lwt_io.fprintf ch "The following tick submissions have been received. They will be run through the autograder after the tick deadline.  You can run this grading yourself using the “validate” button, and resubmit before the deadline if necessary.\n\n" >>= fun () ->
             let lines = TickMap.fold (fun tickname subs strs ->
                 let line =
                     Printf.sprintf "%20s: received %s UTC" tickname
                         (CalendarLib.Printer.Precise_Calendar.to_string (List.hd subs))
                 in
                 let line' =
-                    if List.length subs > 1
-                    then Printf.sprintf "%s (%d older submissions received)" line (List.length subs - 1)
-                    else line
+                    if List.length subs = 2
+                    then Printf.sprintf "%s (1 older submission received)" line
+                    else if List.length subs > 2
+                        then Printf.sprintf "%s (%d older submissions received)" line (List.length subs - 1)
+                        else line
                 in
                 line'::strs) ticks []
             in
